@@ -70,6 +70,13 @@ app.post("/api/chat", async (req, res) => {
 
     const data = await response.json();
 
+    if (data.error) {
+      console.error("Gemini API error:", data.error);
+      return res.status(500).json({
+        reply: "Samahani, AI haijapatikana kwa sasa. Tafadhali jaribu tena."
+      });
+    }
+
     const reply =
       data?.candidates?.[0]?.content?.parts
         ?.map((part) => part.text || "")

@@ -307,9 +307,14 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    async function callGemini(retries = 3) {
+    const models = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash"
+    ];
+
+    async function tryModel(modelName, retries = 2, delay = 1500) {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: {
@@ -332,7 +337,6 @@ app.post("/api/chat", async (req, res) => {
 
       const data = await response.json();
 
-      // success
       if (response.ok && !data.error) {
         return data;
       }
@@ -340,24 +344,37 @@ app.post("/api/chat", async (req, res) => {
       const errorMessage =
         data?.error?.message || data?.message || "Unknown Gemini API error";
 
-      console.error("Gemini API error full:", JSON.stringify(data, null, 2));
+      console.error(`Gemini error from ${modelName}:`, JSON.stringify(data, null, 2));
 
-      // retry only for temporary overload/high demand/server issues
-      const isTemporary =
+      const temporaryError =
         response.status === 429 ||
         response.status === 500 ||
         response.status === 503 ||
         /high demand|overloaded|temporar/i.test(errorMessage);
 
-      if (isTemporary && retries > 0) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return callGemini(retries - 1);
+      if (temporaryError && retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return tryModel(modelName, retries - 1, delay * 2);
       }
 
-      throw new Error(errorMessage);
+      throw new Error(`${modelName}: ${errorMessage}`);
     }
 
-    const data = await callGemini(3);
+    let data = null;
+    let lastError = null;
+
+    for (const model of models) {
+      try {
+        data = await tryModel(model, 2, 1500);
+        if (data) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!data) {
+      throw lastError || new Error("All fallback models failed.");
+    }
 
     const reply =
       data?.candidates?.[0]?.content?.parts

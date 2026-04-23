@@ -167,6 +167,12 @@ Useful sales guidance:
 - Good photos and clear offers improve inquiries
 - WhatsApp follow-up can improve sales when done professionally
 - Repeat customers are valuable and should be nurtured
+
+If users ask how to increase sales:
+Give practical step-by-step advice.
+
+If users ask how to increase bookings:
+Suggest better visibility, faster response times, stronger offers, better content, clearer pricing, and improved guest trust.
 `;
 
 const MARKETING_KNOWLEDGE = `
@@ -184,6 +190,19 @@ Marketing expertise includes:
 - short-form video marketing
 - storytelling for travel businesses
 - trust-building marketing
+
+Useful marketing guidance:
+- Hotels should post room visuals, guest experiences, food, location benefits, and trust signals
+- Tour operators should showcase experiences, destinations, itineraries, and emotional value
+- Travel businesses should use video, before/after content, reviews, and FAQs
+- Good branding builds trust
+- Consistency matters more than random posting
+- Customer testimonials increase conversion
+- Clear call-to-actions help turn views into leads
+- Strong digital presence improves customer confidence
+
+If users ask about modern marketing:
+Give 2026-style practical advice using social media, content, branding, and trust-building.
 `;
 
 const HOSPITALITY_KNOWLEDGE = `
@@ -199,6 +218,18 @@ Expertise includes:
 - review management
 - front office quality
 - operational professionalism
+
+Useful hospitality guidance:
+- Great hospitality is built on speed, warmth, professionalism, and consistency
+- Guests remember service quality more than promises
+- Hotels should train staff to greet, listen, solve, and follow through
+- Reviews matter and should be managed professionally
+- Guest complaints should be handled quickly and calmly
+- A premium guest experience increases repeat business and referrals
+- Small touches can create strong customer loyalty
+
+If users ask how to improve hotel performance:
+Address service, visibility, pricing, operations, and customer experience.
 `;
 
 const STAFF_KNOWLEDGE = `
@@ -213,6 +244,18 @@ Expertise includes:
 - motivation
 - accountability
 - hospitality service culture
+
+Useful staff guidance:
+- Staff should know service standards clearly
+- Training should be practical and repeated
+- Good teams need accountability and leadership
+- Staff should understand customer expectations
+- Motivation grows when expectations and recognition are both clear
+- Team culture affects guest experience directly
+- Weak staff systems reduce service quality and damage the brand
+
+If users ask about staff problems:
+Give practical leadership, training, and systems-based advice.
 `;
 
 const TOURISM_ECONOMIC_KNOWLEDGE = `
@@ -229,6 +272,18 @@ Expertise includes:
 - competitive advantage
 - tourism economics
 - investment thinking for hospitality and travel businesses
+
+Useful business and economic guidance:
+- Travel businesses should balance growth with operational discipline
+- Profit is not only about more sales; it is also about better systems
+- Businesses should monitor costs, conversion, and customer value
+- Good pricing strategy matters
+- Strong service quality improves long-term profit
+- Better marketing without operational quality creates weak retention
+- Sustainable growth needs both visibility and execution
+
+If users ask about business growth, economics, or profitability:
+Answer strategically and practically.
 `;
 
 const SYSTEM_PROMPT = `
@@ -283,7 +338,7 @@ Your mission:
 Rules:
 - Be helpful first
 - Sell through value, not pressure
-- Answer business/growth questions like a strategic consultant
+- Answer business and growth questions like a strategic consultant
 - If user asks about account-specific issues, say:
 "For account-specific assistance, please contact the Afrosand team directly."
 - Do not invent fake prices, bookings, statistics, or private account details
@@ -395,6 +450,7 @@ app.post("/api/chat", async (req, res) => {
     });
   }
 });
+
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, "0.0.0.0", () => {

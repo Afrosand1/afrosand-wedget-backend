@@ -749,3 +749,84 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Afrosand backend running on ${PORT}`);
 });
+function detectLanguage(text) {
+  const swWords = [
+    "habari","mambo","niaje","karibu","asante","samahani","tafadhali",
+    "afrosand","huduma","kujiunga","safari","hoteli","visa","booking",
+    "ni nini","itanisaidiaje","mnatoa huduma gani","nina","je","tafuta"
+  ];
+
+  const lower = (text || "").toLowerCase();
+  return swWords.some(word => lower.includes(word)) ? "sw" : "en-US";
+}
+
+function cleanSpeechText(text) {
+  return (text || "")
+    .replace(/[*#`_~]/g, "")
+    .replace(/[(){}\[\]]/g, "")
+    .replace(/[:]/g, "")
+    .replace(/•/g, "")
+    .replace(/[-–—]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getAvailableVoices() {
+  return window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+}
+
+function pickVoice(lang) {
+  const voices = getAvailableVoices();
+
+  if (lang === "sw") {
+    return (
+      voices.find(v => (v.lang || "").toLowerCase().startsWith("sw")) ||
+      voices.find(v => (v.lang || "").toLowerCase() === "sw-ke") ||
+      voices.find(v => (v.lang || "").toLowerCase() === "sw-tz") ||
+      null
+    );
+  }
+
+  return (
+    voices.find(v => (v.lang || "").toLowerCase().startsWith("en")) ||
+    null
+  );
+}
+
+function speak(text) {
+  if (!voiceEnabled) return;
+  if (!("speechSynthesis" in window)) return;
+
+  const cleanText = cleanSpeechText(text);
+  if (!cleanText) return;
+
+  const lang = detectLanguage(cleanText);
+  const selectedVoice = pickVoice(lang);
+
+  // IMPORTANT:
+  // If text is Swahili but no Swahili voice exists, do not read it with English accent.
+  if (lang === "sw" && !selectedVoice) {
+    console.log("No Swahili voice installed in this browser/device.");
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.lang = lang === "sw" ? "sw" : "en-US";
+
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
+}

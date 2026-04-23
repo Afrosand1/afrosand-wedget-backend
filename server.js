@@ -307,45 +307,61 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `${SYSTEM_PROMPT}\n\nUser message: ${message}`
-                }
-              ]
-            }
-          ]
-        })
+    async function callGemini(retries = 3) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: `${SYSTEM_PROMPT}\n\nUser message: ${message}`
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      // success
+      if (response.ok && !data.error) {
+        return data;
       }
-    );
 
-    const data = await response.json();
+      const errorMessage =
+        data?.error?.message || data?.message || "Unknown Gemini API error";
 
-    if (!response.ok || data.error) {
       console.error("Gemini API error full:", JSON.stringify(data, null, 2));
 
-      return res.status(response.status || 500).json({
-        reply: `Gemini error: ${
-          data?.error?.message ||
-          data?.message ||
-          "Unknown Gemini API error"
-        }`
-      });
+      // retry only for temporary overload/high demand/server issues
+      const isTemporary =
+        response.status === 429 ||
+        response.status === 500 ||
+        response.status === 503 ||
+        /high demand|overloaded|temporar/i.test(errorMessage);
+
+      if (isTemporary && retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return callGemini(retries - 1);
+      }
+
+      throw new Error(errorMessage);
     }
+
+    const data = await callGemini(3);
 
     const reply =
       data?.candidates?.[0]?.content?.parts
-        ?.map((part) => part.text || "")
+        ?.map(part => part.text || "")
         .join(" ")
         .trim() ||
       (/[a-zA-Z]/.test(message)
@@ -353,11 +369,12 @@ app.post("/api/chat", async (req, res) => {
         : "Samahani, sikuweza kujibu kwa sasa. Tafadhali jaribu tena.");
 
     return res.json({ reply });
+
   } catch (error) {
     console.error("Chat error full:", error);
 
     return res.status(500).json({
-      reply: `Server error: ${error.message || "Unknown server error"}`
+      reply: `Gemini error: ${error.message || "Unknown server error"}`
     });
   }
 });

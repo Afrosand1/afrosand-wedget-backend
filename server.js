@@ -331,10 +331,15 @@ app.post("/api/chat", async (req, res) => {
 
     const data = await response.json();
 
-    if (data.error) {
-      console.error("Gemini API error:", JSON.stringify(data, null, 2));
-      return res.status(500).json({
-        reply: "Samahani, AI haijapatikana kwa sasa. Tafadhali jaribu tena."
+    if (!response.ok || data.error) {
+      console.error("Gemini API error full:", JSON.stringify(data, null, 2));
+
+      return res.status(response.status || 500).json({
+        reply: `Gemini error: ${
+          data?.error?.message ||
+          data?.message ||
+          "Unknown Gemini API error"
+        }`
       });
     }
 
@@ -347,15 +352,15 @@ app.post("/api/chat", async (req, res) => {
         ? "Sorry, I could not answer right now. Please try again."
         : "Samahani, sikuweza kujibu kwa sasa. Tafadhali jaribu tena.");
 
-    res.json({ reply });
+    return res.json({ reply });
   } catch (error) {
-    console.error("Chat error:", error);
-    res.status(500).json({
-      reply: "Samahani, kumetokea tatizo la mfumo. Tafadhali jaribu tena."
+    console.error("Chat error full:", error);
+
+    return res.status(500).json({
+      reply: `Server error: ${error.message || "Unknown server error"}`
     });
   }
 });
-
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, "0.0.0.0", () => {
